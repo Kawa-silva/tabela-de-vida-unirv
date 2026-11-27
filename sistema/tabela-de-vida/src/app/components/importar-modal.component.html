@@ -1,0 +1,47 @@
+<div class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Importar Planilha / TSV</h2>
+      <button class="btn-icon" (click)="fechar.emit()" title="Fechar">✕</button>
+    </div>
+    <div class="modal-body">
+      @if (cenario(); as c) {
+        <p class="muted small">
+          Copie as células no Excel, LibreOffice Calc ou Google Sheets e cole abaixo. Cada linha é uma fase
+          ({{ codigosFases() }}) e cada coluna é uma amostra. Separadores aceitos: TAB, ponto e vírgula ou espaços.
+          Para vários talhões, separe os blocos com uma linha <code># Talhão N</code> ou uma linha em branco.
+        </p>
+
+        <div class="import-modes">
+          <label><input type="radio" name="modo" value="replace" [ngModel]="modo()" (ngModelChange)="modo.set($event)" /> Substituir todos os talhões</label>
+          <label><input type="radio" name="modo" value="append" [ngModel]="modo()" (ngModelChange)="modo.set($event)" /> Adicionar como novos talhões</label>
+          <label><input type="radio" name="modo" value="single" [ngModel]="modo()" (ngModelChange)="modo.set($event)" /> Importar em um talhão específico:</label>
+          <select [disabled]="modo() !== 'single'" [ngModel]="talhaoAlvo()" (ngModelChange)="talhaoAlvo.set($event)">
+            @for (t of c.talhoes; track t.numero; let i = $index) { <option [ngValue]="i">{{ t.nome }}</option> }
+          </select>
+        </div>
+
+        <textarea class="import-textarea" rows="12" placeholder="Fase&#9;A1&#9;A2&#9;A3&#10;Ov&#9;9&#9;0&#9;8&#10;N1&#9;0&#9;0&#9;0"
+          [ngModel]="texto()" (ngModelChange)="texto.set($event)"></textarea>
+
+        <p class="small">
+          @if (blocos().length > 0) {
+            ✔ {{ blocos().length }} bloco(s) reconhecido(s) —
+            @for (b of blocos(); track $index; let ultimo = $last) {
+              {{ ('Bloco ' + ($index + 1)) }}: {{ contarFases(b) }} fases@if (!ultimo) {; }
+            }
+          } @else {
+            <span class="muted">Nenhum dado reconhecido ainda.</span>
+          }
+        </p>
+
+        <div class="acoes-finais">
+          <button class="btn btn-secondary" (click)="preencherExemplo()">Preencher Exemplo de Teste</button>
+          <span class="spacer"></span>
+          <button class="btn btn-secondary" (click)="fechar.emit()">Cancelar</button>
+          <button class="btn btn-primary" [disabled]="blocos().length === 0 || lifeTable.salvando()" (click)="importar()">Processar e Importar</button>
+        </div>
+      }
+    </div>
+  </div>
+</div>

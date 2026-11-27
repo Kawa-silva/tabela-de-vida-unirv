@@ -1,0 +1,96 @@
+@if (cenario(); as c) {
+  <section class="card">
+    <div class="section-header">
+      <div>
+        <h2>Coleta &amp; Amostras</h2>
+        <p class="muted">{{ c.nome }} — {{ c.culturaNome }} · {{ c.pragaNome }} (<em>{{ c.pragaNomeCientifico }}</em>)</p>
+      </div>
+      @if (lifeTable.salvando()) { <span class="pill">Salvando...</span> }
+    </div>
+
+    <!-- Fases do ciclo de vida -->
+    <h4>Fases do ciclo de vida (x)</h4>
+    <div class="stages-chips">
+      @for (f of c.fases; track f.codigo) {
+        <span class="stage-chip">
+          <strong>{{ f.codigo }}</strong> <span class="muted small">{{ f.label }}</span>
+          <button class="btn-icon" title="Remover fase" (click)="removerFase(f.codigo)">✕</button>
+        </span>
+      }
+      <span class="nova-fase">
+        <input type="text" placeholder="Código (ex.: N5)" maxlength="20" [ngModel]="novaFaseCodigo()" (ngModelChange)="novaFaseCodigo.set($event)" />
+        <input type="text" placeholder="Nome (ex.: Ninfa 5)" maxlength="60" [ngModel]="novaFaseLabel()" (ngModelChange)="novaFaseLabel.set($event)" />
+        <button class="btn btn-secondary btn-sm" [disabled]="!novaFaseCodigo().trim()" (click)="adicionarFase()">＋ Fase</button>
+      </span>
+    </div>
+    <p class="muted small">Novas fases entram antes do estágio adulto (terminal).</p>
+
+    <!-- Talhões -->
+    <h4>Talhões</h4>
+    <div class="plot-tabs">
+      @for (t of c.talhoes; track t.numero; let i = $index) {
+        <button class="plot-tab" [class.active]="lifeTable.selectedPlotIndex() === i" (click)="selecionarTalhao(i)">{{ t.nome }}</button>
+      }
+      <button class="btn btn-secondary btn-sm" (click)="lifeTable.addPlot()">＋ Novo Talhão</button>
+    </div>
+
+    @if (talhao(); as t) {
+      <div class="plot-summary">
+        <span><strong>{{ t.nome }}</strong></span>
+        <span class="muted">{{ t.amostras.length }} amostras · {{ totalTalhao() }} indivíduos contados</span>
+        <span class="spacer"></span>
+        <button class="btn btn-secondary btn-sm" (click)="lifeTable.addSample()">＋ Amostra (todos os talhões)</button>
+        <button class="btn btn-danger btn-sm" (click)="removerTalhao()">🗑 Remover talhão</button>
+      </div>
+
+      <!-- Matriz de contagens: linhas = fases, colunas = amostras -->
+      <div class="table-wrap">
+        <table class="data-table samples-grid">
+          <thead>
+            <tr>
+              <th class="sticky">Fase (x)</th>
+              @for (a of t.amostras; track a.indice) {
+                <th [title]="'lat ' + a.latitude + ', lng ' + a.longitude">
+                  A{{ a.indice + 1 }}
+                  <span class="coord">{{ a.latitude.toFixed(4) }}<br />{{ a.longitude.toFixed(4) }}</span>
+                </th>
+              }
+              <th class="sum-cell">Σ Aj</th>
+              <th class="sum-cell">Lx</th>
+              <th class="sum-cell">Δ% → x+1</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of c.fases; track f.codigo; let i = $index) {
+              @let r = resumoFases()[i];
+              <tr>
+                <td class="sticky"><strong>{{ f.codigo }}</strong></td>
+                @for (a of t.amostras; track a.indice) {
+                  <td>
+                    <input class="cell-input" type="number" min="0" step="1"
+                      [value]="t.contagens[f.codigo][a.indice]"
+                      (change)="alterarCelula(f.codigo, a.indice, $any($event.target).value)" />
+                  </td>
+                }
+                <td class="sum-cell">{{ r.soma }}</td>
+                <td class="sum-cell"><strong>{{ r.Lx }}</strong></td>
+                <td class="sum-cell" [class.negativo]="r.variacao !== null && r.variacao < 0">
+                  {{ r.variacao === null ? '—' : r.variacao.toFixed(1) + '%' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="muted small">Cada alteração é salva automaticamente no PostgreSQL ao sair da célula (Tab/Enter).
+        Lx = indivíduos que atingiram a fase (soma da fase e das seguintes), convenção da planilha dados.xlsx.</p>
+    }
+  </section>
+
+  <app-mapa-coleta />
+} @else {
+  <section class="card center">
+    <p class="muted">Nenhum cenário ativo. Abra um cenário na Central de Cenários ou crie uma nova coleta.</p>
+    <button class="btn btn-primary" (click)="lifeTable.abaAtiva.set(0)">Ir para a Central de Cenários</button>
+  </section>
+}
