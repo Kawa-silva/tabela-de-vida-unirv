@@ -96,4 +96,5 @@ gráficos SVG e ranking de criticidade. As abas 4 a 7 já existem no frontend co
 ## Equipe
 
 - Kawã Santos
-- (parceiro de dupla)
+- Pedro Lucas
+  
