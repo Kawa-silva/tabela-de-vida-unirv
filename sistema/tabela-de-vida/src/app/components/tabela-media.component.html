@@ -1,0 +1,87 @@
+@if (cenario(); as c) {
+  <section class="card">
+    <div class="section-header">
+      <div>
+        <h2>Tabela de Vida Média dos Talhões &amp; Mortalidade Indispensável</h2>
+        <p class="muted">{{ c.nome }} — média de {{ media()?.numTalhoes ?? 0 }} talhão(ões), coorte normalizada para {{ media()?.coorteBase }} indivíduos</p>
+      </div>
+    </div>
+
+    @if (media(); as m) {
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Fase (x)</th>
+              <th>L̄x ± EP</th>
+              <th>d̄x ± EP</th>
+              <th>l̄x</th>
+              <th>100q̄x</th>
+              <th>100r̄x</th>
+              <th>S̄x</th>
+              <th>k̄x</th>
+              <th>MIx</th>
+              <th>%MIx</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (l of m.linhas; track l.codigo) {
+              <tr [class.terminal]="l.isTerminal" [class.destaque]="l.codigo === m.faseMaiorMI">
+                <td><strong>{{ l.codigo }}</strong> <span class="muted small">{{ l.label }}</span></td>
+                <td>{{ l.Lmedio | num: 2 }} <span class="muted small">± {{ l.LerroPadrao | num: 2 }}</span></td>
+                <td>@if (!l.isTerminal) { {{ l.dmedio | num: 2 }} <span class="muted small">± {{ l.derroPadrao | num: 2 }}</span> } @else { — }</td>
+                <td>{{ l.lx | num: 2 }}</td>
+                <td>{{ l.isTerminal ? '—' : (l.q100 | num: 2) }}</td>
+                <td>{{ l.isTerminal ? '—' : (l.r100 | num: 2) }}</td>
+                <td>{{ l.isTerminal ? '—' : (l.Sx | num: 4) }}</td>
+                <td>{{ l.isTerminal ? '—' : (l.kx | num: 4) }}</td>
+                <td>{{ l.isTerminal ? '—' : (l.MIx | num: 2) }}</td>
+                <td>{{ l.isTerminal ? '—' : (l.MIxPercentual | num: 2) }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr class="summary-row">
+              <td>Σ</td><td></td><td>{{ somas().d | num: 2 }}</td><td></td><td></td>
+              <td>{{ somas().r | num: 2 }}</td><td></td><td>{{ somas().k | num: 4 }}</td>
+              <td>{{ somas().mi | num: 2 }}</td><td>{{ somas().miPerc | num: 2 }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <span class="label">Maior k̄x médio</span>
+          <strong>{{ rotulo(m.faseMaiorK) }}</strong>
+          <span class="small">k̄ = {{ linha(m.faseMaiorK)?.kx | num: 4 }}</span>
+        </div>
+        <div class="summary-card destaque">
+          <span class="label">Maior Mortalidade Indispensável</span>
+          <strong>{{ rotulo(m.faseMaiorMI) }}</strong>
+          <span class="small">MI = {{ linha(m.faseMaiorMI)?.MIx | num: 2 }} ({{ linha(m.faseMaiorMI)?.MIxPercentual | num: 2 }}%)</span>
+        </div>
+        <div class="summary-card">
+          <span class="label">Sobrevivência global até adulto</span>
+          <strong>{{ m.sobrevivenciaGlobal | num: 2 }}%</strong>
+        </div>
+        <div class="summary-card">
+          <span class="label">Mortalidade total média</span>
+          <strong>{{ m.mortalidadeTotalMedia | num: 2 }}%</strong>
+          <span class="small">K̄ total = {{ m.Ktotal | num: 4 }}</span>
+        </div>
+      </div>
+
+      <div class="nota">
+        <strong>Nota metodológica:</strong> a Mortalidade Indispensável (MIx = L̄final × 100q̄x / (100 − 100q̄x)) estima quantos
+        indivíduos a mais chegariam à fase adulta se a mortalidade da fase x fosse eliminada, considerando a mortalidade das fases
+        seguintes. Cada talhão é normalizado para uma coorte de {{ m.coorteBase }} ovos antes do cálculo das médias, como na planilha
+        dados.xlsx.
+      </div>
+    } @else {
+      <p class="muted">Sem dados suficientes para a tabela média.</p>
+    }
+  </section>
+} @else {
+  <section class="card center"><p class="muted">Nenhum cenário ativo.</p></section>
+}

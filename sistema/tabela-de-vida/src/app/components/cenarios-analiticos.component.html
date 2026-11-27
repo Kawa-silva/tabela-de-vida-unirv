@@ -1,0 +1,99 @@
+<section class="card">
+  <div class="toolbar">
+    <input class="search" type="search" placeholder="🔍 Buscar por cenário, agrônomo, cultura, praga ou observação..."
+      [ngModel]="busca()" (ngModelChange)="busca.set($event)" />
+    <button class="btn btn-secondary" (click)="expandirTodos()">Expandir Todos</button>
+    <button class="btn btn-secondary" (click)="recolherTodos()">Recolher Todos</button>
+    <button class="btn btn-primary" (click)="novoCenario()">＋ Novo Cenário Analítico</button>
+  </div>
+
+  @if (cenariosFiltrados().length === 0) {
+    <p class="muted center">Nenhum cenário encontrado.</p>
+  }
+
+  <div class="accordion">
+    @for (c of cenariosFiltrados(); track c.id) {
+      <div class="accordion-item" [class.is-ativo]="c.ativo">
+        <!-- Linha única (recolhida) -->
+        <div class="accordion-summary" (click)="alternar(c.id)">
+          <span class="seta-expandir" [class.aberta]="isExpanded(c.id)">▸</span>
+          @if (c.ativo) { <span class="pill pill-ativo">ATIVO</span> }
+          <strong class="nome" [title]="c.nome">{{ c.nome }}</strong>
+          <span class="meta" title="Criado por">👤 {{ c.usuarioNome }}</span>
+          <span class="meta">🌱 {{ c.culturaNome }}</span>
+          <span class="meta">🐛 {{ c.pragaNome }}</span>
+          <span class="meta">▦ {{ c.numTalhoes }} talhões</span>
+          <span class="meta">• {{ c.numAmostrasPorTalhao }} amostras/talhão</span>
+          <span class="meta">🕒 {{ dataFormatada(c.criadoEm) }}</span>
+          <button class="btn btn-primary btn-sm btn-open-coleta" (click)="abrirColeta(c, $event)">Abrir Coleta →</button>
+        </div>
+
+        <!-- Detalhes (expandido) -->
+        @if (isExpanded(c.id)) {
+          <div class="accordion-body">
+            @if (editandoId() === c.id) {
+              <div class="edit-form-box">
+                <div class="form-grid">
+                  <label>Nome do cenário <input type="text" [ngModel]="editNome()" (ngModelChange)="editNome.set($event)" /></label>
+                  <label>Responsável técnico <input type="text" [ngModel]="editUsuario()" (ngModelChange)="editUsuario.set($event)" /></label>
+                  <label>Data/hora de criação <input type="datetime-local" [ngModel]="editData()" (ngModelChange)="editData.set($event)" /></label>
+                  <label>Observações <input type="text" [ngModel]="editObs()" (ngModelChange)="editObs.set($event)" /></label>
+                </div>
+                <div class="acoes">
+                  <button class="btn btn-primary" (click)="salvarEdicao(c)">💾 Salvar</button>
+                  <button class="btn btn-secondary" (click)="editandoId.set(null)">Cancelar</button>
+                </div>
+              </div>
+            } @else {
+              <div class="meta-cards">
+                <div class="meta-card"><span class="label">Cultura</span><strong>{{ c.culturaNome }}</strong></div>
+                <div class="meta-card"><span class="label">Praga-alvo</span><strong>{{ c.pragaNome }}</strong><em class="small">{{ c.pragaNomeCientifico }}</em></div>
+                <div class="meta-card"><span class="label">Área experimental</span><strong>{{ nomeArea(c.areaExperimentalId) }}</strong></div>
+                <div class="meta-card"><span class="label">Fases (x)</span><strong>{{ c.fases.length }}</strong><span class="small">{{ c.fases[0]?.codigo }} → {{ c.fases[c.fases.length - 1]?.codigo }}</span></div>
+                <div class="meta-card"><span class="label">Atualizado em</span><strong>{{ dataFormatada(c.atualizadoEm) }}</strong></div>
+              </div>
+              @if (c.observacoes) { <p class="obs">📝 {{ c.observacoes }}</p> }
+
+              <h4>Prévia de indivíduos vivos (Lx) por talhão e fase</h4>
+              <div class="table-wrap">
+                <table class="data-table compact">
+                  <thead>
+                    <tr>
+                      <th>Talhão</th>
+                      @for (f of c.fases; track f.codigo) { <th>{{ f.codigo }}</th> }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (t of previaLx(c); track t.nome) {
+                      <tr>
+                        <td>{{ t.nome }}</td>
+                        @for (l of t.linhas; track l.codigo) { <td>{{ l.Lx }}</td> }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              @if (estagioCritico(c); as critico) {
+                <div class="critical-banner">
+                  🎯 <strong>Prévia do estágio crítico (Podoler &amp; Rogers):</strong> {{ critico.label }}
+                  — maior inclinação b = {{ critico.b | num: 4 }}
+                  <span class="muted small">(análise estatística completa na Entrega 2)</span>
+                </div>
+              }
+            }
+
+            <div class="accordion-actions">
+              <button class="btn btn-secondary" (click)="iniciarEdicao(c)">✏️ Editar Dados do Cenário</button>
+              <button class="btn btn-secondary" (click)="duplicar(c)">⧉ Duplicar Cenário</button>
+              <button class="btn btn-danger" (click)="remover(c)">
+                {{ confirmandoExclusao() === c.id ? 'Confirmar exclusão?' : '🗑 Excluir' }}
+              </button>
+              <button class="btn btn-primary" (click)="abrirColeta(c)">Abrir Coleta deste Cenário →</button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</section>

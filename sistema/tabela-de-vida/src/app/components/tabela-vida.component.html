@@ -1,0 +1,93 @@
+@if (cenario(); as c) {
+  <section class="card">
+    <div class="section-header">
+      <div>
+        <h2>Tabela de Vida Ecológica por Talhão</h2>
+        <p class="muted">{{ c.culturaNome }} · {{ c.pragaNome }} (<em>{{ c.pragaNomeCientifico }}</em>)</p>
+      </div>
+      <div class="mode-toggle" title="Convenção de cálculo da mortalidade real (RN015)">
+        <span class="small">100rx:</span>
+        <button [class.active]="!c.usar100rxPlanilha" (click)="lifeTable.setUseSpreadsheet100rx(false)">Padrão Ecológico</button>
+        <button [class.active]="c.usar100rxPlanilha" (click)="lifeTable.setUseSpreadsheet100rx(true)">Planilha Encadeada</button>
+      </div>
+    </div>
+
+    <div class="plot-tabs">
+      @for (t of c.talhoes; track t.numero; let i = $index) {
+        <button class="plot-tab" [class.active]="lifeTable.selectedPlotIndex() === i" (click)="lifeTable.selectedPlotIndex.set(i)">{{ t.nome }}</button>
+      }
+    </div>
+
+    @if (tabela(); as tv) {
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Fase (x)</th>
+              <th title="Indivíduos vivos no início da fase">Lx</th>
+              <th title="Mortos na fase">dx</th>
+              <th title="Sobrevivência acumulada (%)">lx</th>
+              <th title="Mortalidade aparente (%)">100qx</th>
+              <th title="Mortalidade real (%)">100rx</th>
+              <th title="Sobrevivência na fase">Sx</th>
+              <th title="Mortalidade logarítmica parcial">kx</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (l of tv.linhas; track l.codigo) {
+              <tr [class.terminal]="l.isTerminal">
+                <td><strong>{{ l.codigo }}</strong> <span class="muted small">{{ l.label }}</span></td>
+                <td>{{ l.Lx | num: 0 }}</td>
+                <td>{{ l.isTerminal ? '—' : (l.dx | num: 0) }}</td>
+                <td>{{ l.lx | num: 2 }}</td>
+                <td>
+                  @if (!l.isTerminal) {
+                    <div class="bar-cell">
+                      <div class="bar" [style.width.%]="(l.q100 / maiorQ()) * 100"></div>
+                      <span>{{ l.q100 | num: 2 }}</span>
+                    </div>
+                  } @else { — }
+                </td>
+                <td>{{ l.isTerminal ? '—' : (l.r100 | num: 2) }}</td>
+                <td>{{ l.isTerminal ? '—' : (l.Sx | num: 4) }}</td>
+                <td>
+                  @if (!l.isTerminal) {
+                    {{ l.kx | num: 4 }}
+                    @if (tv.faseMaiorK === l.codigo) { <span class="pill pill-alerta">Maior k</span> }
+                  } @else { — }
+                </td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr class="summary-row">
+              <td>Total</td><td></td><td>{{ tv.somaDx | num: 0 }}</td><td></td><td></td><td></td><td></td>
+              <td><strong>K = {{ tv.Ktotal | num: 4 }}</strong></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-card"><span class="label">L0 (coorte inicial)</span><strong>{{ tv.L0 | num: 0 }}</strong></div>
+        <div class="summary-card"><span class="label">Sobreviventes adultos</span><strong>{{ tv.adultos | num: 0 }}</strong></div>
+        <div class="summary-card"><span class="label">Σ dx (mortos)</span><strong>{{ tv.somaDx | num: 0 }}</strong><span class="small">{{ tv.mortalidadeTotal | num: 2 }}% de mortalidade</span></div>
+        <div class="summary-card"><span class="label">K total</span><strong>{{ tv.Ktotal | num: 4 }}</strong></div>
+      </div>
+    }
+
+    <details class="memorial">
+      <summary>Memorial de fórmulas</summary>
+      <ul>
+        <li><strong>Lx</strong> = indivíduos que atingiram a fase x (soma das contagens da fase x e das seguintes, convenção da planilha dados.xlsx)</li>
+        <li><strong>dx</strong> = Lx − Lx+1 · <strong>lx</strong> = 100 · Lx / L0</li>
+        <li><strong>100qx</strong> = 100 · dx / Lx · <strong>Sx</strong> = Lx+1 / Lx</li>
+        <li><strong>100rx</strong> (ecológico) = 100 · dx / L0 · (planilha) = qx × sobrevivência acumulada anterior</li>
+        <li><strong>kx</strong> = log10(Lx) − log10(Lx+1) · <strong>K</strong> = Σ kx</li>
+        <li>Divisões por zero e log(0) resultam em 0 (RN016).</li>
+      </ul>
+    </details>
+  </section>
+} @else {
+  <section class="card center"><p class="muted">Nenhum cenário ativo.</p></section>
+}
