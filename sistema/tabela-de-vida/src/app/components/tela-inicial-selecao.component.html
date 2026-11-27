@@ -1,0 +1,157 @@
+<div class="modal-backdrop">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <h2>Nova Marcha Analítica</h2>
+      <button class="btn-icon" (click)="cancelado.emit()" title="Fechar">✕</button>
+    </div>
+
+    <!-- Stepper -->
+    <div class="stepper-bar">
+      <div class="step" [class.active]="etapa() === 1" [class.done]="etapa() > 1">1. Cultura</div>
+      <div class="step-line"></div>
+      <div class="step" [class.active]="etapa() === 2" [class.done]="etapa() > 2">2. Praga-alvo</div>
+      <div class="step-line"></div>
+      <div class="step" [class.active]="etapa() === 3">3. Amostragem</div>
+    </div>
+
+    <div class="modal-body">
+      @if (selecao.erro()) {
+        <div class="alert alert-erro">{{ selecao.erro() }}</div>
+      }
+
+      <!-- ================= ETAPA 1 ================= -->
+      @if (etapa() === 1) {
+        <p class="muted">Selecione a cultura agrícola hospedeira ({{ selecao.culturas().length }} culturas · {{ selecao.totalPragas() }} pragas catalogadas).</p>
+        <div class="card-grid">
+          @for (c of selecao.culturas(); track c.id) {
+            <button class="cultura-card" (click)="selecionarCultura(c)">
+              <img [src]="c.imagem" [alt]="c.nome" loading="lazy" />
+              <div class="cultura-info">
+                <h3>{{ c.nome }}</h3>
+                <p class="sci">{{ c.nomeCientifico }}</p>
+                <p class="muted small">Família {{ c.familia }}</p>
+                <p class="small">{{ c.descricao }}</p>
+                <span class="pill">{{ c.pragas.length }} pragas catalogadas</span>
+              </div>
+            </button>
+          }
+        </div>
+      }
+
+      <!-- ================= ETAPA 2 ================= -->
+      @if (etapa() === 2 && selecao.culturaSelecionada(); as cultura) {
+        <div class="cultura-selected">
+          <img [src]="cultura.imagem" [alt]="cultura.nome" />
+          <div>
+            <strong>{{ cultura.nome }}</strong> <span class="sci">{{ cultura.nomeCientifico }}</span>
+            <p class="muted small">Selecione a praga-alvo da tabela de vida.</p>
+          </div>
+          <button class="btn btn-secondary" (click)="voltarParaCulturas()">↺ Trocar Cultura</button>
+        </div>
+        <div class="card-grid">
+          @for (p of cultura.pragas; track p.id) {
+            <button class="praga-card" (click)="selecionarPraga(p)">
+              <img [src]="p.imagem" [alt]="p.nomeComum" loading="lazy" />
+              <div class="cultura-info">
+                <span class="pill" [class.pill-alerta]="importancia(p) === 'Principal / Chave'">{{ importancia(p) }}</span>
+                <h3>{{ p.nomeComum }}</h3>
+                <p class="sci">{{ p.nomeCientifico }}</p>
+                <p class="muted small">{{ p.ordem }} · fase crítica típica: {{ p.faseCriticaTipica }}</p>
+                <p class="small">{{ p.descricao }}</p>
+                <div class="stage-pills">
+                  @for (f of p.fasesSugeridas; track f.codigo; let ultimo = $last) {
+                    <span class="stage-pill">{{ f.label }}</span>@if (!ultimo) {<span class="seta">→</span>}
+                  }
+                </div>
+              </div>
+            </button>
+          }
+        </div>
+      }
+
+      <!-- ================= ETAPA 3 ================= -->
+      @if (etapa() === 3 && selecao.culturaSelecionada(); as cultura) {
+        @if (selecao.pragaSelecionada(); as praga) {
+          <div class="cultura-selected">
+            <img [src]="praga.imagem" [alt]="praga.nomeComum" />
+            <div>
+              <strong>{{ cultura.nome }} · {{ praga.nomeComum }}</strong> <span class="sci">{{ praga.nomeCientifico }}</span>
+              <div class="stage-pills">
+                @for (f of praga.fasesSugeridas; track f.codigo) { <span class="stage-pill">{{ f.codigo }}</span> }
+              </div>
+            </div>
+            <button class="btn btn-secondary" (click)="etapa.set(2)">↺ Trocar Praga</button>
+          </div>
+
+          <div class="form-grid">
+            <label>Nome do Cenário Analítico *
+              <input type="text" [ngModel]="nomeCenario()" (ngModelChange)="nomeCenario.set($event)" maxlength="220" placeholder="Ex.: Safra 2026/27 — Talhões da Fazenda" />
+            </label>
+            <label>Criado por / Usuário Responsável *
+              <input type="text" list="lista-usuarios" [ngModel]="criadoPor()" (ngModelChange)="criadoPor.set($event)" maxlength="150" placeholder="Nome do agrônomo" />
+              <datalist id="lista-usuarios">
+                @for (u of selecao.usuarios(); track u.id) { <option [value]="u.nome">{{ u.cargo }}</option> }
+              </datalist>
+            </label>
+            <label>Área experimental da UniRV
+              <select [ngModel]="areaId()" (ngModelChange)="areaId.set($event)">
+                <option value="">Distribuir os talhões nas 4 áreas</option>
+                @for (a of selecao.areas(); track a.id) { <option [value]="a.id">{{ a.nomeCurto }}</option> }
+              </select>
+            </label>
+            <label>Observações técnicas
+              <input type="text" [ngModel]="observacoes()" (ngModelChange)="observacoes.set($event)" maxlength="2000" placeholder="Opcional" />
+            </label>
+          </div>
+
+          <div class="form-grid">
+            <div class="stepper-box">
+              <span class="label">Quantidade de Talhões (T) — 2 a 50</span>
+              <div class="stepper-input">
+                <button class="btn btn-secondary" (click)="ajustar('talhoes', -1)">−</button>
+                <input type="number" min="2" max="50" [ngModel]="numTalhoes()" (ngModelChange)="numTalhoes.set(+$event)" />
+                <button class="btn btn-secondary" (click)="ajustar('talhoes', 1)">＋</button>
+              </div>
+              <div class="chips">
+                @for (n of atalhosTalhoes; track n) {
+                  <button class="chip" [class.active]="numTalhoes() === n" (click)="numTalhoes.set(n)">{{ n }}</button>
+                }
+              </div>
+            </div>
+            <div class="stepper-box">
+              <span class="label">Amostras por Talhão (A) — 1 a 100</span>
+              <div class="stepper-input">
+                <button class="btn btn-secondary" (click)="ajustar('amostras', -1)">−</button>
+                <input type="number" min="1" max="100" [ngModel]="numAmostras()" (ngModelChange)="numAmostras.set(+$event)" />
+                <button class="btn btn-secondary" (click)="ajustar('amostras', 1)">＋</button>
+              </div>
+              <div class="chips">
+                @for (n of atalhosAmostras; track n) {
+                  <button class="chip" [class.active]="numAmostras() === n" (click)="numAmostras.set(n)">{{ n }}</button>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="resumo-esforco">
+            <div><span class="big">{{ numTalhoes() }}</span><span class="muted small">talhões</span></div>
+            <div><span class="big">{{ totalPontos() }}</span><span class="muted small">pontos georreferenciados (T × A)</span></div>
+            <div><span class="big">{{ totalCelulas() }}</span><span class="muted small">células de contagem (T × A × F)</span></div>
+          </div>
+
+          @if (!formularioValido()) {
+            <p class="muted small">Preencha o nome do cenário e o responsável. Talhões: 2 a 50; amostras: 1 a 100.</p>
+          }
+          <div class="acoes-finais">
+            <button class="btn btn-primary" [disabled]="!formularioValido() || lifeTable.salvando()" (click)="confirmarParametrizacao('demo')">
+              🌱 Iniciar com dados experimentais simulados
+            </button>
+            <button class="btn btn-secondary" [disabled]="!formularioValido() || lifeTable.salvando()" (click)="confirmarParametrizacao('zerado')">
+              📋 Iniciar com planilha zerada (digitação em campo)
+            </button>
+          </div>
+        }
+      }
+    </div>
+  </div>
+</div>

@@ -1,0 +1,66 @@
+<section class="card">
+  <div class="section-header">
+    <div>
+      <h2>Georreferenciamento — Áreas Experimentais da UniRV</h2>
+      <p class="muted">Rio Verde — GO · WGS84 (graus decimais)</p>
+    </div>
+  </div>
+
+  <!-- Cartões das 4 áreas -->
+  <div class="unirv-areas">
+    @for (area of selecao.areas(); track area.id) {
+      <div class="unirv-area-card">
+        <strong>{{ area.nomeCurto }}</strong>
+        <span class="muted small">{{ area.dmsLat }} · {{ area.dmsLng }}</span>
+        <span class="small">{{ talhoesPorArea()[area.id] || 0 }} talhão(ões) deste cenário</span>
+        <div class="acoes">
+          <button class="btn btn-secondary btn-sm" (click)="voarParaArea(area)">📍 Ver área</button>
+          @if (talhao(); as t) {
+            <button class="btn btn-primary btn-sm" (click)="moverParaArea(area)">Mover {{ t.nome }} para cá</button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Controles -->
+  <div class="map-toolbar">
+    <div class="map-btn-group">
+      <button [class.active]="modoVisao() === 'talhao'" (click)="definirVisao('talhao')">Foco no Talhão</button>
+      <button [class.active]="modoVisao() === 'todos'" (click)="definirVisao('todos')">Todos os Talhões</button>
+      <button [class.active]="modoVisao() === 'areas'" (click)="definirVisao('areas')">Ver 4 Áreas UniRV</button>
+    </div>
+    <div class="map-btn-group">
+      <button [class.active]="camada() === 'satelite'" (click)="camada.set('satelite')">🛰 Satélite</button>
+      <button [class.active]="camada() === 'ruas'" (click)="camada.set('ruas')">🗺 Mapa de Ruas</button>
+    </div>
+    <button class="btn btn-sm btn-click-region" [class.btn-primary]="modoClique()" [class.btn-secondary]="!modoClique()"
+      (click)="modoClique.set(!modoClique())">
+      {{ modoClique() ? '✔ Clique no mapa muda a região do talhão' : 'Ativar clique para mover talhão' }}
+    </button>
+  </div>
+
+  @if (modoClique() && talhao(); as t) {
+    <div class="banner-verde">🖱 Clique em qualquer ponto do mapa para mover o <strong>{{ t.nome }}</strong> para lá (as amostras mantêm a disposição).</div>
+  }
+
+  <div #mapa id="leaflet-coleta-map" class="leaflet-map" [style.cursor]="modoClique() ? 'crosshair' : ''"></div>
+
+  <!-- Grade de coordenadas -->
+  @if (talhao(); as t) {
+    <button class="btn btn-secondary btn-sm" (click)="mostrarCoordenadas.set(!mostrarCoordenadas())">
+      {{ mostrarCoordenadas() ? '▾' : '▸' }} Coordenadas GPS das amostras do {{ t.nome }}
+    </button>
+    @if (mostrarCoordenadas()) {
+      <div class="coords-grid">
+        @for (a of t.amostras; track a.indice) {
+          <div class="coord-item">
+            <strong>A{{ a.indice + 1 }}</strong>
+            <label>lat <input type="number" step="0.000001" [value]="a.latitude" (change)="alterarCoordenada(a.indice, 'latitude', $any($event.target).value)" /></label>
+            <label>lng <input type="number" step="0.000001" [value]="a.longitude" (change)="alterarCoordenada(a.indice, 'longitude', $any($event.target).value)" /></label>
+          </div>
+        }
+      </div>
+    }
+  }
+</section>

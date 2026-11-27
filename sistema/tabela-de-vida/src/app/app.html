@@ -1,0 +1,66 @@
+<header class="app-header">
+  <div class="brand">
+    <span class="brand-logo">🌾</span>
+    <div>
+      <h1>Tabela de Vida Ecológica &amp; Fator-Chave</h1>
+      <p class="muted">Marchas analíticas agronômicas — Universidade de Rio Verde (UniRV)</p>
+    </div>
+  </div>
+
+  @if (lifeTable.cenarioAtivo(); as cenario) {
+    <div class="header-context">
+      <span class="pill pill-ativo">ATIVO</span>
+      <strong>{{ cenario.nome }}</strong>
+      <span class="muted">{{ cenario.culturaNome }} · {{ cenario.pragaNome }} · {{ cenario.usuarioNome }}</span>
+    </div>
+  }
+
+  <div class="header-actions">
+    <button class="btn btn-secondary" (click)="lifeTable.mostrarImportar.set(true)" [disabled]="!lifeTable.cenarioAtivo()">
+      ⬆ Importar Planilha / TSV
+    </button>
+    <button class="btn btn-primary" (click)="abrirAssistente()">＋ Nova Coleta / Trocar Cultura</button>
+  </div>
+</header>
+
+<nav class="tab-bar">
+  @for (aba of abas; track aba.indice) {
+    <button
+      class="tab"
+      [class.active]="lifeTable.abaAtiva() === aba.indice"
+      [class.futura]="!aba.disponivel"
+      (click)="selecionarAba(aba)"
+      [title]="aba.disponivel ? aba.titulo : 'Disponível na Entrega 2'"
+    >
+      {{ aba.titulo }}
+    </button>
+  }
+</nav>
+
+<main class="app-main">
+  @if (lifeTable.carregando() && lifeTable.cenarios().length === 0) {
+    <div class="card center muted">Carregando cenários do banco de dados...</div>
+  } @else {
+    @switch (lifeTable.abaAtiva()) {
+      @case (0) { <app-cenarios-analiticos /> }
+      @case (1) { <app-coleta-dados /> }
+      @case (2) { <app-tabela-vida /> }
+      @case (3) { <app-tabela-media /> }
+      @default { <app-em-breve [titulo]="tituloAbaAtual()" /> }
+    }
+  }
+</main>
+
+@if (lifeTable.mostrarAssistente()) {
+  <app-tela-inicial-selecao (concluido)="onSelecaoConcluida()" (cancelado)="lifeTable.mostrarAssistente.set(false)" />
+}
+
+@if (lifeTable.mostrarImportar()) {
+  <app-importar-modal (fechar)="lifeTable.mostrarImportar.set(false)" />
+}
+
+<div class="toast-area">
+  @for (n of lifeTable.notificacoes(); track n.id) {
+    <div [class]="'toast toast-' + n.tipo">{{ n.texto }}</div>
+  }
+</div>
